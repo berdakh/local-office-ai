@@ -34,3 +34,11 @@ models:
 # Verify no outbound connections while exercising the app
 offline:
     uv run python scripts/offline_check.py
+
+# Download the public-domain Bible text for scripture verification
+bible:
+    uv run python scripts/fetch_bible.py
+
+# Create a starter letterhead: just letterhead "Grace Community Church"
+letterhead name:
+    uv run python scripts/make_letterhead.py --name "{{name}}"

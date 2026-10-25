@@ -26,3 +26,11 @@ def get_pack(request: Request) -> Pack:
 
 def get_jobs(request: Request) -> JobQueue:
     return request.app.state.jobs
+
+
+def get_transcriber(request: Request):
+    return request.app.state.transcriber
+
+
+def get_bible(request: Request):
+    return request.app.state.bible

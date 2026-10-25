@@ -8,6 +8,9 @@ inputs:
     label: Sermon transcript
     description: Paste the transcript or pick a transcribed recording from the library.
 steps:
+  - id: scripture
+    type: scripture
+    source: transcript
   - id: summary
     type: generate
     prompt: sermon_summary.md

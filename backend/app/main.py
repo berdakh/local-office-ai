@@ -13,6 +13,7 @@ from app.config import Settings, get_settings
 from app.db import connect, init_db
 from app.jobs import JobQueue
 from app.llm import OllamaClient
+from app.transcribe import Bible, Transcriber
 from app.workflows import load_pack
 
 
@@ -29,6 +30,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.pack = load_pack(s.packs_dir, s.pack)
         app.state.llm = OllamaClient(s.ollama_url, s.chat_model, s.embed_model)
         app.state.jobs = JobQueue(conn)
+        app.state.transcriber = Transcriber(s.whisper_model)  # model loads on first use
+        app.state.bible = Bible.load(s.bible_path)
         try:
             yield
         finally:

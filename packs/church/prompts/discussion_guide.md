@@ -1,4 +1,5 @@
 {% include "_voice.md" %}
+{% include "_scripture.md" %}
 
 Write a small-group discussion guide from the sermon below. Use this structure
 in Markdown:

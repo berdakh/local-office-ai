@@ -12,7 +12,7 @@ once the LLC has a brand.
 
 | Feature | What the user does | What comes out |
 |---|---|---|
-| Sermon Studio | Drops in Sunday's recording | Transcript, summary, key points, discussion guide, blog draft, social posts, bulletin blurb |
+| Sermon Studio | Drops in Sunday's recording | Local transcript, scripture references verified against the World English Bible, summary, key points, discussion guide, blog draft, social posts, bulletin blurb |
 | Announcement Hub | Pastes the week's messy announcements | Bulletin blurb, newsletter section, email, social post, slide text |
 | Ask the Office | Asks a question | Answer with file and page citations from the church's own documents |
 | Letter Drafter | Picks a template, fills fields | A Word letter on the church letterhead |
@@ -33,8 +33,10 @@ faster-whisper for transcription, React + Vite frontend served by the backend.
 ollama pull qwen3:8b
 ollama pull nomic-embed-text
 
-# 2. Backend
+# 2. Backend (the transcribe extra brings faster-whisper; ffmpeg must be on PATH for mp3/m4a)
 uv sync --all-extras
+uv run python scripts/fetch_bible.py                     # public-domain Bible for scripture checks
+uv run python scripts/make_letterhead.py --name "Grace Community Church"   # starter letterhead
 uv run uvicorn app.main:app --app-dir backend --reload --port 8000
 
 # 3. Frontend (separate terminal)
@@ -78,7 +80,15 @@ uv run pytest
 uv run ruff check .
 ```
 
-Tests never require Ollama; the LLM is stubbed.
+Tests never require Ollama or a Whisper model; the LLM and transcriber are stubbed.
+
+## Scripture verification
+
+`scripts/fetch_bible.py` converts the World English Bible into
+`packs/church/data/web.json`. Every transcript and every Sermon Studio run
+detects references like `1 Corinthians 13:4-7`, looks them up locally, and
+hands the exact text to the model with the instruction to quote only from it.
+References that do not exist are flagged as probable transcription errors.
 
 ## License
 

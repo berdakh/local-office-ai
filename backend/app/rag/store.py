@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from collections.abc import Awaitable, Callable
 
@@ -20,9 +21,11 @@ def add_document(
     pages: list[Page],
     chunk_size: int = 800,
     chunk_overlap: int = 120,
+    meta: dict | None = None,
 ) -> int:
     cur = conn.execute(
-        "INSERT INTO documents (title, path, kind) VALUES (?, ?, ?)", (title, path, kind)
+        "INSERT INTO documents (title, path, kind, meta) VALUES (?, ?, ?, ?)",
+        (title, path, kind, json.dumps(meta, ensure_ascii=False) if meta else None),
     )
     doc_id = int(cur.lastrowid)
     idx = 0
@@ -59,13 +62,29 @@ async def embed_document(
     return count
 
 
-def list_documents(conn: sqlite3.Connection) -> list[dict]:
+def list_documents(conn: sqlite3.Connection, kind: str | None = None) -> list[dict]:
+    where = "WHERE d.kind = ?" if kind else ""
     rows = conn.execute(
-        "SELECT d.id, d.title, d.kind, d.created_at, COUNT(c.id) AS chunks "
-        "FROM documents d LEFT JOIN chunks c ON c.document_id = d.id "
-        "GROUP BY d.id ORDER BY d.created_at DESC"
+        "SELECT d.id, d.title, d.kind, d.meta, d.created_at, COUNT(c.id) AS chunks "
+        f"FROM documents d LEFT JOIN chunks c ON c.document_id = d.id {where} "
+        "GROUP BY d.id ORDER BY d.created_at DESC, d.id DESC",
+        (kind,) if kind else (),
     ).fetchall()
-    return [dict(r) for r in rows]
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["meta"] = json.loads(d["meta"]) if d["meta"] else {}
+        out.append(d)
+    return out
+
+
+def get_document(conn: sqlite3.Connection, doc_id: int) -> dict | None:
+    r = conn.execute("SELECT * FROM documents WHERE id = ?", (doc_id,)).fetchone()
+    if r is None:
+        return None
+    d = dict(r)
+    d["meta"] = json.loads(d["meta"]) if d["meta"] else {}
+    return d
 
 
 def remove_document(conn: sqlite3.Connection, doc_id: int) -> None:

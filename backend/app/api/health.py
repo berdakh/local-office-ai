@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.config import Settings
 from app.llm import OllamaClient
+from app.transcribe.whisper import transcription_available
 from app.workflows import Pack
 
 from .deps import get_llm, get_pack, get_settings_dep
@@ -27,4 +28,8 @@ async def health(
         "chat_model_installed": s.chat_model in models,
         "embed_model_installed": s.embed_model in models,
         "data_dir": str(s.data_dir),
+        "transcription_available": transcription_available(),
+        "whisper_model": s.whisper_model,
+        "bible_installed": s.bible_path.exists(),
+        "letterhead_installed": s.letterhead_path.exists(),
     }

@@ -3,7 +3,9 @@
 ## Before install day
 - [ ] Office computer specs confirmed (from discovery). Decide: their machine or the appliance.
 - [ ] Models pulled on the target machine over a good connection (several GB).
-- [ ] Letterhead saved as `packs/church/templates/letterhead.docx`.
+- [ ] Letterhead saved as `packs/church/templates/letterhead.docx` (their Word letterhead, or `just letterhead "Church Name"` for a starter).
+- [ ] Bible text fetched: `just bible`. Settings page shows "World English Bible installed".
+- [ ] ffmpeg installed on the target machine (needed for mp3/m4a/mp4 recordings).
 - [ ] A past Sunday recording tested through transcription on the same hardware.
 - [ ] `.env` written with the chosen models and a PIN.
 - [ ] Synthetic samples loaded so the demo works before their documents are in.

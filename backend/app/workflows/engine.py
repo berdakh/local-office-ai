@@ -16,6 +16,7 @@ from typing import Any, Protocol
 from app.llm.prompts import PromptRenderer
 from app.rag.search import Hit, hybrid_search
 from app.render import write_docx, write_markdown
+from app.transcribe.bible import Bible, check_text, format_checks
 
 from .pack import Pack, Workflow, WorkflowStep
 
@@ -43,6 +44,7 @@ class RunContext:
     conn: sqlite3.Connection | None = None
     outputs_dir: Path | None = None
     transcribe: Transcribe | None = None
+    bible: Bible | None = None
     citations: list[Hit] = field(default_factory=list)
 
 
@@ -91,6 +93,16 @@ async def _run_step(
             raise ValueError(f"step {step.id}: no transcriber configured")
         audio = state[step.source or "audio"]
         return ctx.transcribe(Path(str(audio)))
+
+    if step.type == "scripture":
+        text = str(state[step.source or "transcript"])
+        checks = check_text(text, ctx.bible)
+        version = ctx.bible.version if ctx.bible else "WEB"
+        return {
+            "refs": [c.to_dict() for c in checks],
+            "context": format_checks(checks, version),
+            "verified": ctx.bible is not None,
+        }
 
     if step.type == "render":
         return state[step.source] if step.source else ""

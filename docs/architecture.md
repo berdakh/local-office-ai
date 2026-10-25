@@ -19,13 +19,21 @@ UI calls the backend's JSON API.
 `packs/<name>/pack.yaml` declares navigation and hardware tiers. Each
 `workflows/*.yaml` is a list of steps sharing one state dict keyed by input
 names and step ids. Step types: `generate`, `retrieve`, `transcribe`,
-`extract`, `render`. Prompts are Jinja templates with access to the whole
+`extract`, `render`, `scripture`. Prompts are Jinja templates with access to the whole
 state. Adding a vertical means adding a pack, not touching `backend/`.
 
 ## Data
 Everything lives in one data directory (`LOA_DATA_DIR`): `app.db`, `files/`
 (originals), `outputs/` (generated .md and .docx), `logs/`. Backup is a copy
 of that folder. Models are managed by Ollama.
+
+## Transcription and scripture
+`POST /api/transcribe` saves the recording and submits a job. The job runs
+faster-whisper in a worker thread, reporting progress back to the event loop,
+then stores the transcript as a library document of kind `transcript` with
+`meta` holding file paths, duration and scripture checks. The `scripture`
+workflow step runs the same detector and verifier over any text and exposes
+`scripture.context` to prompts, so sermon outputs quote verified text only.
 
 ## Long tasks
 Transcription and embedding run through `app.jobs.JobQueue`, an in-process

@@ -1,7 +1,6 @@
 # Pack data
 
-Place a public-domain Bible text here for scripture verification, for example
-the World English Bible (WEB) as `web.json` or `web.txt`. Text files in this
-folder are git-ignored. A fetch script will be added with the verification
-feature; until then, scripture references are detected and flagged but not
-verified.
+`web.json`: the World English Bible (public domain), produced by
+`uv run python scripts/fetch_bible.py`. Used to verify scripture references
+found in transcripts and to give the model the exact text so it never invents a
+quotation. Git-ignored; about 5 MB. Fetched once at install time.

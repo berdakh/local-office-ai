@@ -13,7 +13,7 @@ from app.config import Settings
 from app.llm import OllamaClient
 from app.workflows import Pack, RunContext, run_workflow
 
-from .deps import get_conn, get_llm, get_pack, get_settings_dep
+from .deps import get_bible, get_conn, get_llm, get_pack, get_settings_dep
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
@@ -45,11 +45,12 @@ async def run(
     llm: OllamaClient = Depends(get_llm),
     conn=Depends(get_conn),
     s: Settings = Depends(get_settings_dep),
+    bible=Depends(get_bible),
 ):
     wf = pack.workflows.get(workflow_id)
     if wf is None:
         raise HTTPException(404, f"No workflow {workflow_id!r}")
-    ctx = RunContext(pack=pack, llm=llm, conn=conn, outputs_dir=s.outputs_dir)
+    ctx = RunContext(pack=pack, llm=llm, conn=conn, outputs_dir=s.outputs_dir, bible=bible)
     try:
         result = await run_workflow(wf, req.inputs, ctx)
     except ValueError as e:
@@ -68,4 +69,5 @@ async def run(
         "outputs": result.outputs,
         "citations": [h.__dict__ for h in result.citations],
         "files": [str(f) for f in result.files],
+        "scripture": result.state.get("scripture"),
     }

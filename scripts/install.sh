@@ -20,6 +20,11 @@ else
 fi
 
 uv run python scripts/pull_models.py
+uv run python scripts/fetch_bible.py
+if [ ! -f packs/church/templates/letterhead.docx ]; then
+  uv run python scripts/make_letterhead.py --name "${LOA_CHURCH_NAME:-Church Office}"
+  echo "Starter letterhead written. Replace packs/church/templates/letterhead.docx with the church's own."
+fi
 mkdir -p "${LOA_DATA_DIR:-$HOME/LocalOfficeAI}"
 echo
 echo "Done. Start with: desktop/launcher/start.sh"

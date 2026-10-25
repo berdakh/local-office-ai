@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     def pack_dir(self) -> Path:
         return self.packs_dir / self.pack
 
+    @property
+    def bible_path(self) -> Path:
+        return self.pack_dir / "data" / "web.json"
+
+    @property
+    def letterhead_path(self) -> Path:
+        return self.pack_dir / "templates" / "letterhead.docx"
+
     def ensure_dirs(self) -> None:
         for d in (self.data_dir, self.files_dir, self.outputs_dir, self.logs_dir):
             d.mkdir(parents=True, exist_ok=True)

@@ -19,7 +19,7 @@ class WorkflowInput(BaseModel):
 
 class WorkflowStep(BaseModel):
     id: str
-    type: Literal["generate", "retrieve", "transcribe", "extract", "render"]
+    type: Literal["generate", "retrieve", "transcribe", "extract", "render", "scripture"]
     prompt: str | None = None  # generate/extract: template path relative to prompts/
     system: str | None = None  # generate/extract: optional system prompt template
     source: str | None = None  # retrieve: query key; transcribe: audio input key

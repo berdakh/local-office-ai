@@ -14,12 +14,21 @@ class Segment:
     text: str
 
 
+def transcription_available() -> bool:
+    try:
+        import faster_whisper  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
 class Transcriber:
     def __init__(self, model_size: str = "small", device: str = "auto", compute_type: str = "auto"):
         self.model_size = model_size
         self.device = device
         self.compute_type = compute_type
         self._model = None
+        self.last_duration: float = 0.0
 
     def _load(self):
         if self._model is None:
@@ -40,6 +49,7 @@ class Transcriber:
         model = self._load()
         segments, info = model.transcribe(str(path), vad_filter=True, beam_size=5)
         total = info.duration or 0.0
+        self.last_duration = total
         out: list[Segment] = []
         for s in segments:
             out.append(Segment(start=s.start, end=s.end, text=s.text.strip()))

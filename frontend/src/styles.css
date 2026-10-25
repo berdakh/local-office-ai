@@ -38,3 +38,9 @@ th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border);
   .shell { flex-direction: column; } .sidebar { width: auto; }
   .two-col, .grid { grid-template-columns: 1fr; } .content { padding: 16px; }
 }
+.row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.progress { margin: 12px 0; }
+.bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.bar > div { height: 100%; background: var(--accent); transition: width .4s; }
+.badge { font-size: 12px; padding: 1px 8px; border-radius: 10px; margin-left: 6px; color: #fff; background: var(--muted); }
+.badge.verified { background: var(--accent); } .badge.not_found { background: var(--error); }

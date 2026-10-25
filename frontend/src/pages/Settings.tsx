@@ -19,6 +19,9 @@ export default function Settings() {
           <tr><th>Chat model</th><td>{ok(h.chat_model_installed)} {h.chat_model}</td></tr>
           <tr><th>Embedding model</th><td>{ok(h.embed_model_installed)} {h.embed_model}</td></tr>
           <tr><th>Installed models</th><td>{h.ollama.models.join(", ") || "none"}</td></tr>
+          <tr><th>Transcription</th><td>{ok(h.transcription_available)} faster-whisper {h.whisper_model}</td></tr>
+          <tr><th>Bible text</th><td>{ok(h.bible_installed)} {h.bible_installed ? "World English Bible installed" : "run: just bible"}</td></tr>
+          <tr><th>Letterhead</th><td>{ok(h.letterhead_installed)} {h.letterhead_installed ? "letterhead.docx installed" : "run: just letterhead \"Church Name\""}</td></tr>
           <tr><th>Data folder</th><td>{h.data_dir}</td></tr>
         </tbody>
       </table>

@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS documents (
     title       TEXT NOT NULL,
     path        TEXT NOT NULL,
     kind        TEXT NOT NULL,            -- pdf, docx, md, txt, transcript
+    meta        TEXT,                     -- json: transcript paths, duration, scripture checks
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

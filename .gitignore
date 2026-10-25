@@ -19,6 +19,7 @@ frontend/dist/
 /data/
 packs/*/data/*.txt
 packs/*/data/*.json
+packs/*/templates/*.docx
 
 # OS / editors
 .DS_Store
@@ -31,3 +32,4 @@ docs/discovery/*.pdf
 docs/discovery/*.docx
 docs/discovery/*.mp3
 docs/discovery/*.m4a
+frontend/*.tsbuildinfo

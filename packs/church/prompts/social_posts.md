@@ -1,4 +1,5 @@
 {% include "_voice.md" %}
+{% include "_scripture.md" %}
 
 Write three short social media posts from the sermon below, each under 280
 characters, each with a different angle: one encouraging, one with a question,

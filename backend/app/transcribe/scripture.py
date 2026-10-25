@@ -33,6 +33,7 @@ BOOKS = [
     "Proverbs",
     "Ecclesiastes",
     "Song of Solomon",
+    "Song of Songs",
     "Isaiah",
     "Jeremiah",
     "Lamentations",
@@ -104,11 +105,14 @@ class ScriptureRef:
         return s
 
 
+ALIASES = {"Psalm": "Psalms", "Song of Songs": "Song of Solomon"}
+
+
 def _canonical_book(raw: str) -> str:
     low = raw.lower()
     for b in BOOKS:
         if b.lower() == low:
-            return "Psalms" if b == "Psalm" else b
+            return ALIASES.get(b, b)
     return raw.title()
 
 

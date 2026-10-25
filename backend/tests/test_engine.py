@@ -1,5 +1,6 @@
 from app.ingest import Page
 from app.rag import add_document, embed_document
+from app.transcribe import Bible
 from app.workflows import RunContext, run_workflow
 
 
@@ -17,8 +18,23 @@ async def test_sermon_studio_renders_all_outputs(pack, stub_llm, tmp_path):
     }
     assert len(stub_llm.calls) == 6
     assert all("church office" in c["prompt"] for c in stub_llm.calls), "voice include missing"
+    # No Bible loaded: references are still detected, prompts flag them unverified.
+    assert result.state["scripture"]["refs"][0]["ref"] == "Matthew 6:25"
+    assert result.state["scripture"]["verified"] is False
+    assert all("Matthew 6:25: unverified" in c["prompt"] for c in stub_llm.calls)
     names = {f.name for f in result.files}
     assert "discussion_guide.docx" in names and "summary.md" in names
+
+
+async def test_sermon_studio_quotes_verified_scripture_in_prompts(pack, stub_llm, tmp_path):
+    bible = Bible(
+        {"Matthew": {"6": {"25": "Therefore I tell you, don't be anxious for your life."}}}
+    )
+    ctx = RunContext(pack=pack, llm=stub_llm, outputs_dir=tmp_path / "out", bible=bible)
+    await run_workflow(
+        pack.workflows["sermon_studio"], {"transcript": "Matthew 6:25 says do not worry."}, ctx
+    )
+    assert all("don't be anxious for your life" in c["prompt"] for c in stub_llm.calls)
 
 
 async def test_ask_retrieves_and_cites(pack, stub_llm, conn):

@@ -19,6 +19,12 @@ if (Get-Command npm -ErrorAction SilentlyContinue) {
 }
 
 uv run python scripts/pull_models.py
+uv run python scripts/fetch_bible.py
+if (-not (Test-Path "packs\church\templates\letterhead.docx")) {
+  $name = if ($env:LOA_CHURCH_NAME) { $env:LOA_CHURCH_NAME } else { "Church Office" }
+  uv run python scripts/make_letterhead.py --name $name
+  Write-Host "Starter letterhead written. Replace packs\church\templates\letterhead.docx with the church's own."
+}
 $data = if ($env:LOA_DATA_DIR) { $env:LOA_DATA_DIR } else { "$env:LOCALAPPDATA\LocalOfficeAI" }
 New-Item -ItemType Directory -Force -Path $data | Out-Null
 Write-Host "`nDone. Start with: desktop\launcher\start.bat"

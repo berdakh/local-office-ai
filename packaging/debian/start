@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+
+root=$(dirname "$(readlink -f "$0")")
+export LOA_DATA_DIR="${LOA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/local-office-ai}"
+export LOA_PORT="${LOA_PORT:-8765}"
+export LOA_CHAT_MODEL="${LOA_CHAT_MODEL:-qwen2.5:3b-instruct}"
+export LOA_EMBED_MODEL="${LOA_EMBED_MODEL:-nomic-embed-text}"
+export LOA_WHISPER_MODEL="${LOA_WHISPER_MODEL:-tiny.en}"
+export LOA_WHISPER_MODEL_DIR="${LOA_WHISPER_MODEL_DIR:-$root/app/models/whisper}"
+
+python="$root/runtime/bin/python3.12"
+unset PYTHONPATH PYTHONHOME
+export PYTHONNOUSERSITE=1
+if [ "${LOA_NO_BROWSER:-0}" = 1 ] || [ -t 2 ]; then
+    exec "$python" -s "$root/app/scripts/pilot_setup.py" launch
+fi
+
+log_dir="${XDG_STATE_HOME:-$HOME/.local/state}/local-office-ai"
+mkdir -p "$log_dir"
+if "$python" -s "$root/app/scripts/pilot_setup.py" launch >> "$log_dir/launcher.log" 2>&1; then
+    exit 0
+fi
+if command -v notify-send >/dev/null; then
+    notify-send -a 'Local Office AI' 'Local Office AI could not start' "See $log_dir/launcher.log for details."
+fi
+exit 1

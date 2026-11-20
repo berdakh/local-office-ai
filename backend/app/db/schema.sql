@@ -1,6 +1,29 @@
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS app_preferences (
+    key         TEXT PRIMARY KEY,
+    value       TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS contacts (
+    id          INTEGER PRIMARY KEY,
+    name        TEXT NOT NULL,
+    email       TEXT NOT NULL,
+    UNIQUE(email)
+);
+
+CREATE TABLE IF NOT EXISTS correspondence_drafts (
+    id          INTEGER PRIMARY KEY,
+    recipient   TEXT NOT NULL,
+    email       TEXT NOT NULL,
+    subject     TEXT NOT NULL,
+    body        TEXT NOT NULL,
+    template    TEXT NOT NULL,
+    notes       TEXT NOT NULL,
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS documents (
     id          INTEGER PRIMARY KEY,
     title       TEXT NOT NULL,
@@ -46,9 +69,30 @@ CREATE TABLE IF NOT EXISTS jobs (
     progress    REAL NOT NULL DEFAULT 0,
     result      TEXT,                     -- json
     error       TEXT,
+    label       TEXT,
+    detail      TEXT,
+    route       TEXT,
+    context     TEXT,                     -- json
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS generated_texts (
+    id          INTEGER PRIMARY KEY,
+    run_id      TEXT NOT NULL,
+    workflow    TEXT NOT NULL,
+    output_key  TEXT NOT NULL,
+    title       TEXT NOT NULL,
+    body        TEXT NOT NULL,
+    model       TEXT NOT NULL,
+    sources     TEXT NOT NULL DEFAULT '[]',
+    tags        TEXT NOT NULL DEFAULT '[]',
+    status      TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'reviewed')),
+    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    UNIQUE (run_id, output_key)
+);
+CREATE INDEX IF NOT EXISTS generated_texts_date_idx ON generated_texts(created_at DESC, id DESC);
 
 CREATE TABLE IF NOT EXISTS audit_log (
     id          INTEGER PRIMARY KEY,

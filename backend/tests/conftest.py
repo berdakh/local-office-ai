@@ -24,7 +24,7 @@ class StubLLM:
     def __init__(self):
         self.calls: list[dict] = []
 
-    async def generate(self, prompt, system=None, model=None, options=None):
+    async def generate(self, prompt, system=None, model=None, options=None, *, think=None):
         self.calls.append({"prompt": prompt, "system": system, "model": model})
         return "STUB: " + prompt[:60].replace("\n", " ")
 
@@ -44,6 +44,12 @@ class StubLLM:
 
     async def list_models(self):
         return []
+
+    async def list_chat_models(self):
+        return ["example:small", "example:large"]
+
+    async def has_chat_model(self, name):
+        return name in await self.list_chat_models()
 
     async def aclose(self):
         return None

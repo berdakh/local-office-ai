@@ -2,6 +2,7 @@ id: sermon_studio
 title: Sermon Studio
 description: Turn a sermon transcript into a summary, key points, discussion guide, blog post, social posts and a bulletin blurb.
 group: Sermon
+selectable_outputs: true
 inputs:
   - name: transcript
     type: document

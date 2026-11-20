@@ -20,7 +20,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-transcribe = ["faster-whisper>=1.0"]
+transcribe = [
+    "faster-whisper>=1.0",
+    "av<19",  # faster-whisper 1.2.1 still passes the removed metadata_errors argument
+]
 
 [dependency-groups]
 dev = [

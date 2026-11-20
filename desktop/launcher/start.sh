@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
-# Starts Ollama if needed, then the backend, then opens the browser.
+# Launch from the prepared Python environment without dependency resolution.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-if ! curl -s http://127.0.0.1:11434/api/tags >/dev/null; then
-  echo "Starting Ollama..."
-  (ollama serve >/dev/null 2>&1 &)
-  sleep 2
+if [[ ! -x .venv/bin/python ]]; then
+  echo "Run scripts/install.sh --offline after provisioning the pilot." >&2
+  exit 1
 fi
-
-PORT="${LOA_PORT:-8000}"
-echo "Local Office AI on http://127.0.0.1:$PORT"
-( sleep 2; (open "http://127.0.0.1:$PORT" 2>/dev/null || xdg-open "http://127.0.0.1:$PORT" 2>/dev/null) ) &
-exec uv run uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port "$PORT"
+exec .venv/bin/python scripts/pilot_setup.py launch

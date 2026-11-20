@@ -1,4 +1,5 @@
 id: ask
+requires_sources: true
 title: Ask the Office
 description: Answer a question from the church's own documents, with citations.
 group: Documents
@@ -12,7 +13,7 @@ steps:
     source: question
     k: 6
   - id: answer
-    type: generate
+    type: quote
     prompt: ask.md
 outputs:
   - { name: answer, source: answer, type: markdown }

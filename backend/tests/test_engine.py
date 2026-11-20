@@ -37,7 +37,12 @@ async def test_sermon_studio_quotes_verified_scripture_in_prompts(pack, stub_llm
     assert all("don't be anxious for your life" in c["prompt"] for c in stub_llm.calls)
 
 
-async def test_ask_retrieves_and_cites(pack, stub_llm, conn):
+async def test_ask_retrieves_and_cites(pack, stub_llm, conn, monkeypatch):
+    async def quote(prompt, **kwargs):
+        assert "A) [Building Use Policy]" in prompt
+        return "A"
+
+    monkeypatch.setattr(stub_llm, "generate", quote)
     policy = add_document(
         conn,
         "Building Use Policy",
@@ -60,7 +65,7 @@ async def test_ask_retrieves_and_cites(pack, stub_llm, conn):
     )
     assert result.citations, "expected at least one citation"
     assert result.citations[0].title == "Building Use Policy"
-    assert "[1]" in stub_llm.calls[-1]["prompt"]
+    assert result.outputs["answer"] == "The fellowship hall seats 120 people. [1]"
 
 
 async def test_missing_required_input_is_an_error(pack, stub_llm):

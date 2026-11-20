@@ -11,6 +11,11 @@ def test_numbered_books_and_ranges():
     assert [str(r) for r in refs] == ["1 Corinthians 13:4-7", "1 John 4:8"]
 
 
+def test_normalizes_references_transcribed_without_colons():
+    refs = find_scripture_refs("Romans 12, 13. Luke chapter 10, verse 33. First Peter 4 9.")
+    assert [str(r) for r in refs] == ["Romans 12:13", "Luke 10:33", "1 Peter 4:9"]
+
+
 def test_chapter_only_and_psalm_alias():
     refs = find_scripture_refs("We read Psalm 23 and Matthew 7.")
     assert [str(r) for r in refs] == ["Psalms 23", "Matthew 7"]

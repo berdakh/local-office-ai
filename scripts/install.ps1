@@ -1,30 +1,31 @@
-# Install day script for Windows. Run from the repo root in PowerShell.
+# Prepare once online, then install from the staged assets on the same machine.
+param([ValidateSet("Prepare", "Offline")] [string] $Mode = "Prepare")
 $ErrorActionPreference = "Stop"
-
-if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
-  Write-Host "Install Ollama from https://ollama.com/download/windows then re-run this script."
-  exit 1
+Set-Location (Join-Path $PSScriptRoot "..")
+if (-not $env:UV_CACHE_DIR) {
+    $env:UV_CACHE_DIR = Join-Path $PWD ".pilot-cache\uv"
 }
-if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-  Write-Host "Installing uv..."
-  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-  $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
-}
-
-uv sync --all-extras
-if (Get-Command npm -ErrorAction SilentlyContinue) {
-  Push-Location frontend; npm install; npm run build; Pop-Location
+$env:UV_PROJECT_ENVIRONMENT = Join-Path $PWD ".venv"
+if ($Mode -eq "Prepare") {
+    if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
+        throw "Install Node.js with npm before preparing."
+    }
+    uv sync --locked --extra transcribe --no-dev --reinstall
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Push-Location frontend
+    try {
+        npm.cmd ci
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        npm.cmd run build
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
+    & .\.venv\Scripts\python.exe scripts/pilot_setup.py prepare
 } else {
-  Write-Host "npm not found; frontend not built. Install Node 22 and run: cd frontend; npm install; npm run build"
+    uv sync --offline --locked --extra transcribe --no-dev --no-python-downloads
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & .\.venv\Scripts\python.exe scripts/pilot_setup.py check
 }
-
-uv run python scripts/pull_models.py
-uv run python scripts/fetch_bible.py
-if (-not (Test-Path "packs\church\templates\letterhead.docx")) {
-  $name = if ($env:LOA_CHURCH_NAME) { $env:LOA_CHURCH_NAME } else { "Church Office" }
-  uv run python scripts/make_letterhead.py --name $name
-  Write-Host "Starter letterhead written. Replace packs\church\templates\letterhead.docx with the church's own."
-}
-$data = if ($env:LOA_DATA_DIR) { $env:LOA_DATA_DIR } else { "$env:LOCALAPPDATA\LocalOfficeAI" }
-New-Item -ItemType Directory -Force -Path $data | Out-Null
-Write-Host "`nDone. Start with: desktop\launcher\start.bat"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Write-Host "Start with desktop\launcher\start.bat"

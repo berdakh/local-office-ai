@@ -18,6 +18,10 @@ def connect(db_path: Path) -> sqlite3.Connection:
 # alter existing tables, so each (table, column, type) here is added if missing.
 _ADDED_COLUMNS = [
     ("documents", "meta", "TEXT"),
+    ("jobs", "label", "TEXT"),
+    ("jobs", "detail", "TEXT"),
+    ("jobs", "route", "TEXT"),
+    ("jobs", "context", "TEXT"),
 ]
 
 

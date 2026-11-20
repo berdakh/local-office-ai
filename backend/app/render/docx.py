@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import re
+from io import BytesIO
 from pathlib import Path
 
 import docx
+from docx.document import Document
 
 _NUMBERED = re.compile(r"^\s*\d+[.)]\s+")
 
 
-def write_docx(text: str, path: Path, template: Path | None = None) -> Path:
+def _build_docx(text: str, template: Path | None) -> Document:
     doc = docx.Document(str(template)) if template and template.exists() else docx.Document()
     # A template may carry an empty body paragraph; drop it so output starts clean.
     for para in list(doc.paragraphs):
@@ -32,6 +34,16 @@ def write_docx(text: str, path: Path, template: Path | None = None) -> Path:
             doc.add_paragraph(_NUMBERED.sub("", line), style="List Number")
         else:
             doc.add_paragraph(line)
+    return doc
+
+
+def docx_bytes(text: str, template: Path | None = None) -> bytes:
+    buffer = BytesIO()
+    _build_docx(text, template).save(buffer)
+    return buffer.getvalue()
+
+
+def write_docx(text: str, path: Path, template: Path | None = None) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    doc.save(str(path))
+    _build_docx(text, template).save(str(path))
     return path

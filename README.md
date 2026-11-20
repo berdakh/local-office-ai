@@ -8,6 +8,8 @@ templates and YAML workflows, not as application code.
 **Working name.** Rename the repo, the `LOA_` env prefix and the data folder
 once the LLC has a brand.
 
+[Follow the illustrated quick start for church office teams](docs/quick-start.md).
+
 ## What it does (church pack)
 
 | Feature | What the user does | What comes out |
@@ -26,6 +28,37 @@ Python 3.11+ / FastAPI backend, SQLite, BM25 + local embeddings for hybrid
 search, [Ollama](https://ollama.com) for inference and embeddings,
 faster-whisper for transcription, React + Vite frontend served by the backend.
 
+## Single-machine pilot install
+
+Install Python 3.11+, uv, Node.js with npm, and Ollama before staging. On the
+pilot machine, copy `.env.example` to `.env` and set the desired model names.
+The pilot uses a loopback Ollama service. A lighter chat option is
+`LOA_CHAT_MODEL=qwen2.5:3b-instruct`.
+
+| Stage | Linux/macOS | Windows (PowerShell) |
+|---|---|---|
+| Prepare once with internet access | `./scripts/install.sh --prepare` | `./scripts/install.ps1 -Mode Prepare` |
+| Install or rebuild the Python environment offline | `./scripts/install.sh --offline` | `./scripts/install.ps1 -Mode Offline` |
+| Launch offline | `./desktop/launcher/start.sh` | `./desktop/launcher/start.bat` |
+
+Preparation caches the locked Python packages and Whisper model under
+`.pilot-cache/`, builds `frontend/dist/`, saves the Bible and a starter
+letterhead into the selected pack, and pulls the configured Ollama models into
+the local Ollama store. Keep those staged assets, Ollama, uv, and a compatible
+Python interpreter available for offline installation. After preparation, the
+launcher uses the installed Python environment directly. Ollama and the app
+communicate on the same computer and the app listens on `127.0.0.1` only.
+
+See the [pilot runbook](docs/pilot-runbook.md) for testing with networking off.
+
+The amd64 Debian package targets Pop!_OS 22.04 and opens the workspace
+from the desktop application menu. It bundles Python, the frontend, and
+the Whisper model. It uses the machine's existing Ollama installation and
+the `qwen2.5:3b-instruct` and `nomic-embed-text` models. Build it from a
+prepared checkout with `packaging/debian/build.sh /path/to/package.deb`.
+The installed app uses `http://127.0.0.1:8765` and saves its data under
+`${XDG_DATA_HOME:-$HOME/.local/share}/local-office-ai`.
+
 ## Quick start (development)
 
 ```bash
@@ -33,7 +66,7 @@ faster-whisper for transcription, React + Vite frontend served by the backend.
 ollama pull qwen3:8b
 ollama pull nomic-embed-text
 
-# 2. Backend (the transcribe extra brings faster-whisper; ffmpeg must be on PATH for mp3/m4a)
+# 2. Backend (for audio, stage the Whisper model with the pilot preparation step)
 uv sync --all-extras
 uv run python scripts/fetch_bible.py                     # public-domain Bible for scripture checks
 uv run python scripts/make_letterhead.py --name "Grace Community Church"   # starter letterhead
@@ -56,11 +89,13 @@ Environment variables (prefix `LOA_`), or a `.env` file. See `.env.example`.
 |---|---|---|
 | `LOA_DATA_DIR` | `~/LocalOfficeAI` | Database, uploaded files, outputs, logs. Backup = copy this folder. |
 | `LOA_PACK` | `church` | Which pack in `packs/` to load |
-| `LOA_OLLAMA_URL` | `http://127.0.0.1:11434` | Ollama endpoint |
+| `LOA_OLLAMA_URL` | `http://127.0.0.1:11434` | Loopback Ollama endpoint |
 | `LOA_CHAT_MODEL` | `qwen3:8b` | Generation model |
+| `LOA_CHAT_CONTEXT` | `8192` | Context window in tokens for generation |
 | `LOA_EMBED_MODEL` | `nomic-embed-text` | Embedding model |
 | `LOA_WHISPER_MODEL` | `small` | faster-whisper model size |
-| `LOA_PIN` | empty | Office PIN; empty disables login |
+| `LOA_WHISPER_MODEL_DIR` | unset | Optional existing faster-whisper model directory |
+| `LOA_PIN` | empty | Reserved for future authentication |
 
 ## Layout
 

@@ -1,7 +1,6 @@
-{% include "_voice.md" %}
-{% include "_scripture.md" %}
+{% include "_sermon_input.md" %}
 
-Write a small-group discussion guide from the sermon below. Use this structure
+Write a small-group discussion guide from the sermon. Use this structure
 in Markdown:
 
 # Discussion Guide
@@ -17,8 +16,3 @@ Six questions that move from understanding to application. Number them.
 One concrete thing to try before next meeting.
 ## Closing prayer prompt
 Two sentences.
-
-Transcript:
-"""
-{{ transcript }}
-"""

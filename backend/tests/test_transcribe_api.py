@@ -1,22 +1,27 @@
 import io
 import time
 import wave
+from pathlib import Path
+
+import pytest
 
 from app.transcribe import Bible
-from app.transcribe.whisper import Segment
+from app.transcribe.whisper import Segment, Transcription
 
 
 class FakeTranscriber:
-    last_duration = 42.0
-
     def transcribe(self, path, progress=None):
         if progress:
             progress(0.5)
             progress(1.0)
-        return [
-            Segment(0.0, 5.0, "Welcome everyone."),
-            Segment(5.0, 12.0, "Today we read John 3:16 and Psalm 23."),
-        ]
+        opening = "Welcome back." if path.read_bytes().endswith(b"second") else "Welcome everyone."
+        return Transcription(
+            [
+                Segment(0.0, 5.0, opening),
+                Segment(5.0, 12.0, "Today we read John 3:16 and Psalm 23."),
+            ],
+            42.0,
+        )
 
 
 def _wav_bytes() -> bytes:
@@ -39,8 +44,14 @@ def _wait(client, job_id, timeout=10.0):
     raise AssertionError("job did not finish")
 
 
-def test_transcribe_creates_transcript_with_scripture(client, monkeypatch):
-    monkeypatch.setattr("app.api.transcribe.transcription_available", lambda: True)
+def test_whisper_can_decode_supported_audio_with_locked_dependencies():
+    audio = pytest.importorskip("faster_whisper.audio")
+    decoded = audio.decode_audio(io.BytesIO(_wav_bytes()), sampling_rate=8000)
+    assert len(decoded) == 8000
+
+
+def test_transcribe_creates_transcript_with_scripture(client, stub_llm, monkeypatch):
+    monkeypatch.setattr("app.api.transcribe.transcription_available", lambda _: True)
     client.app.state.transcriber = FakeTranscriber()
     client.app.state.bible = Bible(
         {"John": {"3": {"16": "For God so loved the world."}}, "Psalms": {"23": {"1": "x"}}}
@@ -62,21 +73,55 @@ def test_transcribe_creates_transcript_with_scripture(client, monkeypatch):
     assert full["text"].startswith("Welcome everyone.")
     assert full["meta"]["segments"] == 2
 
+    async def quote(prompt, **kwargs):
+        assert "John 3:16 and Psalm 23" in prompt
+        return "A"
+
+    monkeypatch.setattr(stub_llm, "generate", quote)
     # The transcript is searchable like any other document
     ask = client.post("/api/ask", json={"question": "What did we read today?"}).json()
     assert any(c["title"] == "sunday" for c in ask["citations"])
 
 
 def test_transcribe_rejects_non_audio(client, monkeypatch):
-    monkeypatch.setattr("app.api.transcribe.transcription_available", lambda: True)
+    monkeypatch.setattr("app.api.transcribe.transcription_available", lambda _: True)
     r = client.post("/api/transcribe", files={"file": ("notes.txt", b"hi", "text/plain")})
     assert r.status_code == 400
 
 
 def test_transcribe_without_faster_whisper_is_503(client, monkeypatch):
-    monkeypatch.setattr("app.api.transcribe.transcription_available", lambda: False)
+    monkeypatch.setattr("app.api.transcribe.transcription_available", lambda _: False)
     r = client.post("/api/transcribe", files={"file": ("a.mp3", b"x", "audio/mpeg")})
     assert r.status_code == 503
+
+
+def test_same_filename_recordings_keep_their_own_audio_and_transcript(client, monkeypatch):
+    monkeypatch.setattr("app.api.transcribe.transcription_available", lambda _: True)
+    client.app.state.transcriber = FakeTranscriber()
+    original = _wav_bytes()
+    second = original + b"second"
+
+    document_ids = []
+    for recording in (original, second):
+        response = client.post(
+            "/api/transcribe", files={"file": ("sunday.wav", recording, "audio/wav")}
+        )
+        job_id = response.raise_for_status().json()["job_id"]
+        media = client.get(f"/api/transcription-jobs/{job_id}/audio", headers={"Range": "bytes=-6"})
+        assert media.status_code == 206
+        assert media.content == recording[-6:]
+        job = _wait(client, job_id)
+        assert job["context"]["name"] == "sunday.wav"
+        assert job["status"] == "done", job["error"]
+        document_ids.append(job["result"]["document_id"])
+
+    first, latest = (client.get(f"/api/transcripts/{doc_id}").json() for doc_id in document_ids)
+    assert first["title"] == latest["title"] == "sunday"
+    assert first["text"].startswith("Welcome everyone.")
+    assert latest["text"].startswith("Welcome back.")
+    assert Path(first["meta"]["audio_path"]).read_bytes() == original
+    assert Path(latest["meta"]["audio_path"]).read_bytes() == second
+    assert first["meta"]["segments_path"] != latest["meta"]["segments_path"]
 
 
 def test_scripture_check_endpoint(client):

@@ -11,6 +11,10 @@ def test_short_text_is_one_chunk():
     assert chunk_text("a b c", size=10, overlap=2) == ["a b c"]
 
 
+def test_chunks_preserve_document_line_breaks():
+    assert chunk_text("  Chapel $300\nSanctuary $500 ") == ["Chapel $300\nSanctuary $500"]
+
+
 def test_chunks_overlap():
     words = [f"w{i}" for i in range(25)]
     chunks = chunk_text(" ".join(words), size=10, overlap=3)

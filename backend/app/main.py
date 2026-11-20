@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -28,13 +28,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.settings = s
         app.state.conn = conn
         app.state.pack = load_pack(s.packs_dir, s.pack)
-        app.state.llm = OllamaClient(s.ollama_url, s.chat_model, s.embed_model)
+        app.state.llm = OllamaClient(
+            s.ollama_url, s.chat_model, s.embed_model, context_size=s.chat_context
+        )
         app.state.jobs = JobQueue(conn)
-        app.state.transcriber = Transcriber(s.whisper_model)  # model loads on first use
+        app.state.transcriber = Transcriber(s.whisper_model_path)
         app.state.bible = Bible.load(s.bible_path)
         try:
             yield
         finally:
+            await app.state.jobs.close()
             await app.state.llm.aclose()
             conn.close()
 
@@ -47,9 +50,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         @app.get("/{full_path:path}", include_in_schema=False)
         async def spa(full_path: str):
-            candidate = dist / full_path
-            if full_path and candidate.is_file():
-                return FileResponse(candidate)
+            if full_path == "api" or full_path.startswith("api/"):
+                raise HTTPException(404)
             return FileResponse(dist / "index.html")
     else:
 

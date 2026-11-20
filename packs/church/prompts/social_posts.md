@@ -1,11 +1,5 @@
-{% include "_voice.md" %}
-{% include "_scripture.md" %}
+{% include "_sermon_input.md" %}
 
-Write three short social media posts from the sermon below, each under 280
+Write three short social media posts from the sermon, each under 280
 characters, each with a different angle: one encouraging, one with a question,
 one with a single key quote from the transcript. Label them 1, 2, 3.
-
-Transcript:
-"""
-{{ transcript }}
-"""

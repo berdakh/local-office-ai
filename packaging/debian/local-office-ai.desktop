@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Local Office AI
+Comment=Transcribe sermons and draft office documents with local models
+Exec=local-office-ai
+Icon=local-office-ai
+Terminal=false
+Categories=Office;
+Keywords=sermon;transcription;church;offline;

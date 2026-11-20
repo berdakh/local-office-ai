@@ -31,9 +31,9 @@ check:
 models:
     uv run python scripts/pull_models.py
 
-# Verify no outbound connections while exercising the app
-offline:
-    uv run python scripts/offline_check.py
+# Exercise a running pilot with networking disconnected
+offline recording:
+    .venv/bin/python scripts/offline_check.py "{{recording}}"
 
 # Download the public-domain Bible text for scripture verification
 bible:

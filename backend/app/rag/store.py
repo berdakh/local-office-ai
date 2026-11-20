@@ -43,23 +43,28 @@ def add_document(
 async def embed_document(
     conn: sqlite3.Connection, doc_id: int, embed: EmbedFn, model: str, batch: int = 32
 ) -> int:
-    rows = conn.execute(
-        "SELECT id, text FROM chunks WHERE document_id = ? ORDER BY idx", (doc_id,)
-    ).fetchall()
-    count = 0
+    chunks = "SELECT id, text FROM chunks WHERE document_id = ? ORDER BY idx"
+    rows = conn.execute(chunks, (doc_id,)).fetchall()
+    embeddings = []
     for i in range(0, len(rows), batch):
         part = rows[i : i + batch]
         vectors = await embed([r["text"] for r in part])
         for row, vec in zip(part, vectors, strict=True):
             arr = np.asarray(vec, dtype=np.float32)
-            conn.execute(
-                "INSERT OR REPLACE INTO chunk_embeddings (chunk_id, model, dim, embedding) "
-                "VALUES (?, ?, ?, ?)",
-                (row["id"], model, arr.size, arr.tobytes()),
-            )
-            count += 1
-    conn.commit()
-    return count
+            if arr.ndim != 1 or not arr.size or not np.isfinite(arr).all():
+                raise ValueError("The embedding model returned an invalid vector.")
+            embeddings.append((row["id"], model, arr.size, arr.tobytes()))
+
+    if not embeddings or conn.execute(chunks, (doc_id,)).fetchall() != rows:
+        # The document may have been deleted or its ID reused during an embedding request.
+        return 0
+    with conn:
+        conn.executemany(
+            "INSERT OR REPLACE INTO chunk_embeddings (chunk_id, model, dim, embedding) "
+            "VALUES (?, ?, ?, ?)",
+            embeddings,
+        )
+    return len(embeddings)
 
 
 def list_documents(conn: sqlite3.Connection, kind: str | None = None) -> list[dict]:

@@ -2,20 +2,27 @@
 
 ## Before install day
 - [ ] Office computer specs confirmed (from discovery). Decide: their machine or the appliance.
-- [ ] Models pulled on the target machine over a good connection (several GB).
-- [ ] Letterhead saved as `packs/church/templates/letterhead.docx` (their Word letterhead, or `just letterhead "Church Name"` for a starter).
-- [ ] Bible text fetched: `just bible`. Settings page shows "World English Bible installed".
-- [ ] ffmpeg installed on the target machine (needed for mp3/m4a/mp4 recordings).
-- [ ] A past Sunday recording tested through transcription on the same hardware.
-- [ ] `.env` written with the chosen models and a PIN.
+- [ ] Python 3.11+, uv, Node.js with npm, and Ollama installed.
+- [ ] `.env` written with the intended models and location for office data.
+- [ ] Online preparation completed on the target machine (model downloads can be several GB).
+- [ ] The office's Word letterhead saved as `packs/church/templates/letterhead.docx`, or the generated starter reviewed.
+- [ ] A recording with known scripture references selected for the offline test.
 - [ ] Synthetic samples loaded so the demo works before their documents are in.
 
 ## Install day (90 minutes)
-1. Run `scripts/install.sh` or `scripts/install.ps1`.
-2. Start with the launcher; confirm `/api/health` shows the models installed.
-3. Load their bulletins, newsletters, bylaws and policies into the Library.
-4. Run `scripts/offline_check.py` with them watching. Then unplug the network and run Sermon Studio.
-5. 30-minute training (below). Leave this runbook printed.
+1. Disconnect the pilot computer's internet connection while keeping localhost available.
+2. Run `./scripts/install.sh --offline` on Linux/macOS or `./scripts/install.ps1 -Mode Offline` in PowerShell.
+3. Start with the launcher and confirm the models and Bible show as installed in Settings.
+4. Run a recording through Sermon Studio, check a known reference, and download an edited draft. The command below runs the same operations from the terminal and checks that the stored transcript, embedding, all six drafts, and both export formats are usable.
+5. Load their documents into the Library, then run the training below.
+
+```bash
+.venv/bin/python scripts/offline_check.py sermon.mp3 --expect-reference "John 3:16"
+```
+
+On Windows use `.venv\Scripts\python.exe`. Use the actual reference spoken in
+the recording. The check exercises the app through localhost. The network must
+already be disconnected or blocked before running it.
 
 ## 30-minute training script
 - 5 min: what it is, what it never does (nothing leaves this computer, nothing is sent anywhere).

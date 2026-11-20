@@ -19,7 +19,7 @@ class WorkflowInput(BaseModel):
 
 class WorkflowStep(BaseModel):
     id: str
-    type: Literal["generate", "retrieve", "transcribe", "extract", "render", "scripture"]
+    type: Literal["generate", "retrieve", "transcribe", "extract", "render", "scripture", "quote"]
     prompt: str | None = None  # generate/extract: template path relative to prompts/
     system: str | None = None  # generate/extract: optional system prompt template
     source: str | None = None  # retrieve: query key; transcribe: audio input key
@@ -41,6 +41,8 @@ class Workflow(BaseModel):
     title: str
     description: str = ""
     group: str = "General"
+    selectable_outputs: bool = False  # each output source is an independent terminal step
+    requires_sources: bool = False
     inputs: list[WorkflowInput] = []
     steps: list[WorkflowStep]
     outputs: list[WorkflowOutput] = []

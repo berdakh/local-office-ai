@@ -5,6 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from threading import Lock
+
+import numpy as np
 
 
 @dataclass
@@ -14,7 +17,19 @@ class Segment:
     text: str
 
 
-def transcription_available() -> bool:
+@dataclass
+class Transcription:
+    segments: list[Segment]
+    duration: float
+
+
+def model_files_present(path: Path) -> bool:
+    return all((path / name).is_file() for name in ("config.json", "model.bin", "tokenizer.json"))
+
+
+def transcription_available(model_path: Path) -> bool:
+    if not model_files_present(model_path):
+        return False
     try:
         import faster_whisper  # noqa: F401
     except ImportError:
@@ -23,39 +38,47 @@ def transcription_available() -> bool:
 
 
 class Transcriber:
-    def __init__(self, model_size: str = "small", device: str = "auto", compute_type: str = "auto"):
-        self.model_size = model_size
+    def __init__(self, model_path: Path, device: str = "auto", compute_type: str = "auto"):
+        self.model_path = model_path
         self.device = device
         self.compute_type = compute_type
         self._model = None
-        self.last_duration: float = 0.0
+        self._load_lock = Lock()
 
     def _load(self):
-        if self._model is None:
-            try:
+        with self._load_lock:
+            if self._model is None:
+                if not transcription_available(self.model_path):
+                    raise RuntimeError("The local transcription model or package is missing.")
                 from faster_whisper import WhisperModel
-            except ImportError as e:  # pragma: no cover
-                raise RuntimeError(
-                    "faster-whisper is not installed. Run: uv sync --extra transcribe"
-                ) from e
-            self._model = WhisperModel(
-                self.model_size, device=self.device, compute_type=self.compute_type
-            )
-        return self._model
+
+                self._model = WhisperModel(
+                    str(self.model_path),
+                    device=self.device,
+                    compute_type=self.compute_type,
+                    local_files_only=True,
+                )
+            return self._model
 
     def transcribe(
         self, path: Path, progress: Callable[[float], None] | None = None
-    ) -> list[Segment]:
+    ) -> Transcription:
         model = self._load()
         segments, info = model.transcribe(str(path), vad_filter=True, beam_size=5)
         total = info.duration or 0.0
-        self.last_duration = total
         out: list[Segment] = []
         for s in segments:
             out.append(Segment(start=s.start, end=s.end, text=s.text.strip()))
             if progress and total:
                 progress(min(1.0, s.end / total))
-        return out
+        return Transcription(out, total)
+
+    def preview(self, pcm: bytes) -> str:
+        audio = np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768
+        segments, _ = self._load().transcribe(
+            audio, beam_size=1, vad_filter=True, condition_on_previous_text=False
+        )
+        return "\n".join(segment.text.strip() for segment in segments if segment.text.strip())
 
 
 def segments_to_text(segments: list[Segment]) -> str:

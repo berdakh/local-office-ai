@@ -1,30 +1,22 @@
 #!/usr/bin/env bash
-# Install day script for macOS / Linux. Run from the repo root.
+# Prepare once online, then install from the staged assets on the same machine.
 set -euo pipefail
+cd "$(dirname "$0")/.."
 
-if ! command -v ollama >/dev/null; then
-  echo "Installing Ollama..."
-  curl -fsSL https://ollama.com/install.sh | sh
+mode="${1:---prepare}"
+if [[ "$#" -gt 1 || ( "$mode" != "--prepare" && "$mode" != "--offline" ) ]]; then
+  echo "Usage: scripts/install.sh [--prepare|--offline]" >&2
+  exit 2
 fi
-if ! command -v uv >/dev/null; then
-  echo "Installing uv..."
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  export PATH="$HOME/.local/bin:$PATH"
-fi
-
-uv sync --all-extras
-if command -v npm >/dev/null; then
-  (cd frontend && npm install && npm run build)
+export UV_CACHE_DIR="${UV_CACHE_DIR:-$PWD/.pilot-cache/uv}"
+export UV_PROJECT_ENVIRONMENT="$PWD/.venv"
+if [[ "$mode" == "--prepare" ]]; then
+  command -v npm >/dev/null || { echo "Install Node.js with npm before preparing." >&2; exit 1; }
+  uv sync --locked --extra transcribe --no-dev --reinstall
+  (cd frontend && npm ci && npm run build)
+  .venv/bin/python scripts/pilot_setup.py prepare
 else
-  echo "npm not found; frontend not built. Install Node 22 and run: cd frontend && npm install && npm run build"
+  uv sync --offline --locked --extra transcribe --no-dev --no-python-downloads
+  .venv/bin/python scripts/pilot_setup.py check
 fi
-
-uv run python scripts/pull_models.py
-uv run python scripts/fetch_bible.py
-if [ ! -f packs/church/templates/letterhead.docx ]; then
-  uv run python scripts/make_letterhead.py --name "${LOA_CHURCH_NAME:-Church Office}"
-  echo "Starter letterhead written. Replace packs/church/templates/letterhead.docx with the church's own."
-fi
-mkdir -p "${LOA_DATA_DIR:-$HOME/LocalOfficeAI}"
-echo
-echo "Done. Start with: desktop/launcher/start.sh"
+echo "Start with desktop/launcher/start.sh"
